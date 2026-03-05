@@ -24,7 +24,38 @@ char *lexeme;
 void consume();
 
 /* Command-line parser. */
-void parse();
+void parse() {
+  consume();
+
+  // TODO: validate start and pipes
+
+command:
+  ensure(lookahead, STRING);
+  command_t *command = add_command(); // create new command list entry
+
+program:
+  ensure(lookahead, STRING);
+  command->argv[0] = lexeme; // populate data in the list entry
+  consume();
+  // TODO: collect arguments as well
+
+  // TODO: parse redirect in
+
+out:
+  if (match(lookahead, REDIRECT_OUT)) {
+    consume();
+    ensure(lookahead, STRING);
+    command->out = lexeme;
+    consume();
+  }
+
+  // TODO: parse pipes
+
+  ensure(lookahead, END_OF_LINE);
+
+  // Be sure to remove any debugging output to stdout before submitting
+  print_commands();
+}
 
 /* Command interpreter. */
 void run_commands();
@@ -38,7 +69,5 @@ int main(int argc, char **argv) {
   parse();
   run_commands();
 }
-
-void parse() {}
 
 void run_commands() {}
