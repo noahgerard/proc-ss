@@ -1,15 +1,14 @@
-#include <stdio.h>
+#include <errno.h> // ECHILD
 #include <stdbool.h>
-#include <malloc.h>
-#include <stdlib.h>    // exit()
-#include <string.h>    // strcspn(), strtok
-#include <errno.h>     // ECHILD
+#include <stdio.h>
+#include <stdlib.h> // exit()
+#include <string.h> // strcspn(), strtok
 
 #include "tokens.h"
 
 #include "util.h"
 
-void* xmalloc(size_t size) {
+void *xmalloc(size_t size) {
   void *ptr = malloc(size);
   if (ptr == NULL && size != 0) {
     fprintf(stderr, "FATAL: memory exhausted\n");
@@ -18,9 +17,10 @@ void* xmalloc(size_t size) {
   return ptr;
 }
 
-char* copystr(char *yytext) {
+char *copystr(char *yytext) {
   size_t len = strlen(yytext);
-  char *strval = xmalloc(sizeof(char *) * len + 1);  // add one for the end character
+  char *strval =
+      xmalloc(sizeof(char *) * len + 1); // add one for the end character
   strval = strncpy(strval, yytext, len);
   strval[len] = '\0';
   return strval;
@@ -32,7 +32,9 @@ command_t *last_command = NULL;
 
 command_t *add_command() {
   command_t *new_command = xmalloc(sizeof(command_t));
-  for (int i = 0; i < MAX_ARGS; i++) { new_command->argv[i] = NULL; }
+  for (int i = 0; i < MAX_ARGS; i++) {
+    new_command->argv[i] = NULL;
+  }
   new_command->in = NULL;
   new_command->out = NULL;
   new_command->next = NULL;
@@ -98,9 +100,7 @@ void print_commands() {
   printf("\n");
 }
 
-bool match(token_t token1, token_t token2) {
-  return token1 == token2;
-}
+bool match(token_t token1, token_t token2) { return token1 == token2; }
 
 void ensure(token_t token1, token_t token2) {
   if (!match(token1, token2)) {
