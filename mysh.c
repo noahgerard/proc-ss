@@ -28,6 +28,8 @@ void parse() {
   consume();
 
   // TODO: validate start and pipes
+start:
+pipes:
 
 command:
   ensure(lookahead, STRING);
@@ -37,9 +39,21 @@ program:
   ensure(lookahead, STRING);
   command->argv[0] = lexeme; // populate data in the list entry
   consume();
-  // TODO: collect arguments as well
+  // Collect arguments
+  int arg_count = 1;
+  while (match(lookahead, STRING)) {
+    command->argv[arg_count] = lexeme;
+    arg_count++;
+    consume();
+  }
 
-  // TODO: parse redirect in
+in:
+  if (match(lookahead, REDIRECT_IN)) {
+    consume();
+    ensure(lookahead, STRING);
+    command->in = lexeme;
+    consume();
+  }
 
 out:
   if (match(lookahead, REDIRECT_OUT)) {
@@ -49,11 +63,15 @@ out:
     consume();
   }
 
-  // TODO: parse pipes
+  if (match(lookahead, PIPE)) {
+    command->pipe_next = true;
+    consume();
+    goto pipes;
+  }
 
   ensure(lookahead, END_OF_LINE);
 
-  // Be sure to remove any debugging output to stdout before submitting
+  // TODO: Be sure to remove any debugging output to stdout before submitting
   print_commands();
 }
 

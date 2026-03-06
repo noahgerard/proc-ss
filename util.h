@@ -2,13 +2,13 @@
 #define UTIL_H
 
 /* malloc or die.  Adapted from busybox's xfuncs_printf.c */
-void* xmalloc(size_t size);
+void *xmalloc(size_t size);
 
 /*
  * Make a copy of the lexer's text value, since it will use that
  * buffer for other things.
  */
-char* copystr(char *yytext);
+char *copystr(char *yytext);
 
 /*
  * Only required to support up to 62 arguments, 64 when including the
@@ -24,9 +24,11 @@ char* copystr(char *yytext);
  * pipes.  If there is only one command, then there are no pipes.
  */
 typedef struct command_s {
-  char *argv[MAX_ARGS];  // NULL-terminated list, i.e., the next element after the last should be NULL.
-  char *in;  // NULL if there is no redirect
-  char *out;  // NULL if there is no redirect
+  // NULL-terminated list, i.e., the next element after the last should be NULL.
+  char *argv[MAX_ARGS];
+  char *in;       // NULL if there is no redirect
+  char *out;      // NULL if there is no redirect
+  bool pipe_next; // Should pipe output to next command?
   struct command_s *next;
 } command_t;
 
