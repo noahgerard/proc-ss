@@ -88,4 +88,51 @@ int main(int argc, char **argv) {
   run_commands();
 }
 
-void run_commands() {}
+void run_commands() {
+  if (NULL != first_command && first_command == last_command) {
+    // one command in the list
+
+    command_t *command = first_command;
+
+    pid_t pid;
+    switch (pid = fork()) {
+    case -1:
+      perror("fork");
+      exit(EXIT_FAILURE);
+      break;
+    case 0: // child
+
+      if (NULL != command->out) {
+        int outfd =
+            open(command->out, O_RDWR | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
+        if (-1 == outfd) {
+          perror("open");
+          exit(EXIT_FAILURE);
+        }
+        if (-1 == dup2(outfd, STDOUT_FILENO)) {
+          perror("dup2");
+          exit(EXIT_FAILURE);
+        }
+        if (-1 == close(outfd)) {
+          perror("close");
+          exit(EXIT_FAILURE);
+        }
+      }
+
+      execvp(command->argv[0], command->argv);
+      perror("execvp");
+      _exit(EXIT_FAILURE);
+      break;
+    default: // parent
+      // nothing to do here.  will wait for all children once all child
+      // processes are created.
+      break;
+    }
+
+    // wait for children to exit
+    do {
+      while (wait(NULL) > 0)
+        ;
+    } while (errno != ECHILD);
+  }
+}
