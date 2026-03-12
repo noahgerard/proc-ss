@@ -3,8 +3,9 @@
 #include <inttypes.h> // intmax_t
 #include <stdbool.h>
 #include <stdio.h>
-#include <stdlib.h>   // exit()
-#include <string.h>   // strcspn(), strtok
+#include <stdlib.h> // exit()
+#include <string.h> // strcspn(), strtok
+#include <sys/fcntl.h>
 #include <sys/wait.h> // wait()
 #include <unistd.h>   // fork()
 
@@ -72,6 +73,7 @@ out:
   ensure(lookahead, END_OF_LINE);
 
   // TODO: Be sure to remove any debugging output to stdout before submitting
+  printf("PRINTING COMMANDS!\n");
   print_commands();
 }
 
@@ -101,6 +103,22 @@ void run_commands() {
       exit(EXIT_FAILURE);
       break;
     case 0: // child
+
+      if (NULL != command->in) {
+        int infd = open(command->in, O_RDONLY);
+        if (-1 == infd) {
+          perror("open");
+          exit(EXIT_FAILURE);
+        }
+        if (-1 == dup2(infd, STDIN_FILENO)) {
+          perror("dup2");
+          exit(EXIT_FAILURE);
+        }
+        if (-1 == close(infd)) {
+          perror("close");
+          exit(EXIT_FAILURE);
+        }
+      }
 
       if (NULL != command->out) {
         int outfd =
