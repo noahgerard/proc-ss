@@ -18,14 +18,10 @@ void *xmalloc(size_t size) {
 }
 
 char *copystr(char *yytext) {
-  size_t len = strlen(yytext);
-  char *strval =
-      xmalloc(sizeof(char *) * len + 1); // add one for the end character
-  strval = strncpy(strval, yytext, len);
-  strval[len] = '\0';
+  char *strval = xmalloc(strlen(yytext) + 1);
+  strcpy(strval, yytext);
   return strval;
 }
-
 command_t *first_command = NULL;
 
 command_t *last_command = NULL;
