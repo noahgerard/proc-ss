@@ -232,7 +232,7 @@ void run_commands() {
         if (command->pipe_next) {
           // We MUST close the write end in the parent.
           // Only the child should be writing to this.
-          close(pipefd[1]);
+          close_in_end(pipefd);
 
           // Now, save the read end as the baton for the NEXT loop.
           prev_pipe_out = pipefd[0];
