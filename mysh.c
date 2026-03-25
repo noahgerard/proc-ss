@@ -28,7 +28,6 @@ void consume();
 void parse() {
   consume();
 
-  // TODO: validate start and pipes
 start:
 pipes:
 
@@ -71,9 +70,6 @@ out:
   }
 
   ensure(lookahead, END_OF_LINE);
-
-  // TODO: Be sure to remove any debugging output to stdout before submitting
-  print_commands();
 }
 
 /* Command interpreter. */
@@ -87,7 +83,6 @@ void consume() {
 int main(int argc, char **argv) {
   parse();
   run_commands();
-  printf("commands all run, next\n");
 }
 
 void close_out_end(int pipefd[2]) {
@@ -96,17 +91,56 @@ void close_out_end(int pipefd[2]) {
     exit(EXIT_FAILURE);
   }
 }
+
 void close_in_end(int pipefd[2]) {
   if (-1 == close(pipefd[1])) {
     perror("close");
     exit(EXIT_FAILURE);
   }
 }
+
 void wait_till_children_die() {
   do {
     while (wait(NULL) > 0)
       ;
   } while (errno != ECHILD);
+}
+
+void input_redirection(command_t *command) {
+  if (NULL != command->in) {
+    int infd = open(command->in, O_RDONLY);
+    if (-1 == infd) {
+      perror("open");
+      exit(EXIT_FAILURE);
+    }
+    if (-1 == dup2(infd, STDIN_FILENO)) {
+      perror("dup2");
+      exit(EXIT_FAILURE);
+    }
+    if (-1 == close(infd)) {
+      perror("close");
+      exit(EXIT_FAILURE);
+    }
+  }
+}
+
+void output_redirection(command_t *command) {
+  if (NULL != command->out) {
+    int outfd =
+        open(command->out, O_RDWR | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
+    if (-1 == outfd) {
+      perror("open");
+      exit(EXIT_FAILURE);
+    }
+    if (-1 == dup2(outfd, STDOUT_FILENO)) {
+      perror("dup2");
+      exit(EXIT_FAILURE);
+    }
+    if (-1 == close(outfd)) {
+      perror("close");
+      exit(EXIT_FAILURE);
+    }
+  }
 }
 
 void run_commands() {
@@ -122,41 +156,8 @@ void run_commands() {
       exit(EXIT_FAILURE);
       break;
     case 0: // child
-
-      // Input redirection
-      if (NULL != command->in) {
-        int infd = open(command->in, O_RDONLY);
-        if (-1 == infd) {
-          perror("open");
-          exit(EXIT_FAILURE);
-        }
-        if (-1 == dup2(infd, STDIN_FILENO)) {
-          perror("dup2");
-          exit(EXIT_FAILURE);
-        }
-        if (-1 == close(infd)) {
-          perror("close");
-          exit(EXIT_FAILURE);
-        }
-      }
-
-      // Output redirection
-      if (NULL != command->out) {
-        int outfd =
-            open(command->out, O_RDWR | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
-        if (-1 == outfd) {
-          perror("open");
-          exit(EXIT_FAILURE);
-        }
-        if (-1 == dup2(outfd, STDOUT_FILENO)) {
-          perror("dup2");
-          exit(EXIT_FAILURE);
-        }
-        if (-1 == close(outfd)) {
-          perror("close");
-          exit(EXIT_FAILURE);
-        }
-      }
+      input_redirection(command);
+      output_redirection(command);
 
       execvp(command->argv[0], command->argv);
       perror("execvp");
@@ -168,7 +169,6 @@ void run_commands() {
       break;
     }
 
-    // wait for children to exit
     wait_till_children_die();
   } else if (NULL != first_command) {
     command_t *command = first_command;
@@ -184,6 +184,9 @@ void run_commands() {
           exit(EXIT_FAILURE);
         }
       }
+
+      input_redirection(command);
+      output_redirection(command);
 
       pid_t pid;
       switch (pid = fork()) {
@@ -228,13 +231,11 @@ void run_commands() {
           prev_pipe_out = -1; // Reset it
         }
 
-        // 2. If we just created a NEW pipe for the current child to write into:
         if (command->pipe_next) {
           // We MUST close the write end in the parent.
           // Only the child should be writing to this.
           close_in_end(pipefd);
 
-          // Now, save the read end as the baton for the NEXT loop.
           prev_pipe_out = pipefd[0];
         }
 
